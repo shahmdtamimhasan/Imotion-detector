@@ -1,20 +1,17 @@
 import cv2
 from deepface import DeepFace
 
-# ১. ফেস ডিটেকশনের জন্য সঠিক Haar Cascade লোড করা
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
-# ২. ওয়েবক্যাম ওপেন করা
 cap = cv2.VideoCapture(0)
 
 if not cap.isOpened():
     print("Error: Could not open webcam")
     exit()
 
-# পারফরম্যান্স ভালো রাখার জন্য ফ্রেম স্কিপ সেট করা
 frame_skip = 10
 frame_count = 0
-face_emotions = {}  # ইমোশন সেভ করে রাখার জন্য
+face_emotions = {}
 
 print("Press 'q' to quit")
 
@@ -23,19 +20,15 @@ while True:
     if not ret:
         break
 
-    # গ্রে-স্কেল কনভার্ট করা (এটি ডিটেকশন দ্রুত করে)
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    # মুখ শনাক্ত করা
     faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(100, 100))
 
-    # প্রতি ১০ ফ্রেম অন্তর ইমোশন এনালাইসিস করা
     if frame_count % frame_skip == 0:
         new_face_emotions = {}
         for (x, y, w, h) in faces:
             face_roi = frame[y:y+h, x:x+w]
             try:
-                # DeepFace ব্যবহার করে ইমোশন শনাক্ত করা
                 result = DeepFace.analyze(face_roi, actions=['emotion'], enforce_detection=False, detector_backend='opencv')
                 if result:
                     emotion = result[0]['dominant_emotion']
@@ -43,16 +36,12 @@ while True:
             except Exception as e:
                 new_face_emotions[(x, y, w, h)] = "Processing..."
         
-        # শুধু ডিটেকশন সফল হলেই আপডেট করা
         if new_face_emotions:
             face_emotions = new_face_emotions
 
-    # স্ক্রিনে বক্স এবং টেক্সট ড্র করা
     for (x, y, w, h) in faces:
-        # আগের পাওয়া ইমোশনটি দেখানো (ল্যাগ কমানোর জন্য)
         emotion = "Analyzing..."
         for key, val in face_emotions.items():
-            # বক্সের পজিশন চেক করে ইমোশন ম্যাচ করা
             kx, ky, kw, kh = key
             if abs(x - kx) < 50 and abs(y - ky) < 50:
                 emotion = val
